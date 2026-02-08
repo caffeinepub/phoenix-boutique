@@ -1,0 +1,49 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-08T07:04:32.405Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 1,
+    "implemented": 1,
+    "items": [
+      {
+        "id": "REQ-51",
+        "summary": "Generate an Android **release** APK artifact for Phoenix Boutique suitable for installation/distribution, using the existing mobile release build configuration, and make the produced APK available as a build output with a clearly identifiable filename.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/ANDROID_RELEASE.md",
+          "frontend/scripts/build-android-release-apk.sh",
+          "frontend/build-outputs/.gitkeep",
+          "frontend/android/keystore.properties.example",
+          "frontend/android/keystores/README.md"
+        ],
+        "matchedFiles": [
+          "frontend/ANDROID_RELEASE.md",
+          "frontend/scripts/build-android-release-apk.sh",
+          "frontend/build-outputs/.gitkeep",
+          "frontend/android/keystore.properties.example",
+          "frontend/android/keystores/README.md"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/ANDROID_RELEASE.md",
+    "frontend/android/keystore.properties.example",
+    "frontend/android/keystores/README.md",
+    "frontend/build-outputs/.gitkeep",
+    "frontend/scripts/build-android-release-apk.sh",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

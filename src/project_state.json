@@ -1,0 +1,539 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 27,
+  "summary": "\"Phoenix Boutique\" mobile app scope now includes implementing a full Order Details screen, updating New Order and Edit Order screens to capture pricing/payment fields (with validation and auto-derived fields), adding an Order Details \"Update Payment\" action to record additional payments after order creation while preserving payment history and allowing audit notes, adding offline-only export features (daily/weekly order CSV exports and a printable summary view sourced from the local database), applying final UI/UX polish with a specified luxury boutique design system and performance/offline-safe requirements, preparing the app for final production builds (Android APK/AAB and iOS IPA) with clean release configuration, production-ready assets, and no demo data, extending the Order data model to support pricing/payment, payment updates/history, and audit notes with safe migration and auto-calculated/derived fields, creating an \"Audit & Accounts\" screen with summary cards, time filters (including custom date range), payment breakdown counts, and clear ₹ currency display, and adding offline-only audit export features: Weekly Audit CSV, Monthly Audit CSV (with specified columns), plus a printable audit summary view sourced from the local database.",
+  "architectural_notes": [
+    "Cross-platform mobile app for Android and iOS (React Native / Flutter / Capacitor-based React).",
+    "Offline-first: must run fully without internet.",
+    "No backend services and no cloud sync.",
+    "No authentication (single-owner private business app).",
+    "Use local on-device database (SQLite or equivalent).",
+    "Initial deliverable is clean project structure + navigation only; screens are placeholders without UI/business logic.",
+    "Dashboard pulls metrics + recent orders via local DB queries (no network) and auto-refreshes when orders change (e.g., on screen focus and/or via a local change notification/state update mechanism).",
+    "Export features must be offline-only and sourced exclusively from the on-device local database (no internet).",
+    "Design system for final polish: Primary #800020 (Deep Burgundy), Secondary #FFD700 (Gold), Background #FFFDD0 (Cream), Text #36454F; luxury boutique styling with rounded cards, soft shadows, smooth transitions; optimize for 375–414px layouts.",
+    "Production release readiness: configure clean Android/iOS release build settings and ensure production assets; remove any demo/sample data from release builds."
+  ],
+  "known_issues": [
+    "Deployment/build process encountered an unspecified technical error during deployment; user requested resolution."
+  ],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-create-the-application-shell-for-an-app-named-phoenix-boutique-using-the-existing-react-typescript-template-with-a-clean-maintainable-project-structure-folders-for-screens-pages-navigation-routing-and-shared-ui-layout",
+      "title": "Create the application shell for an app named \"Phoenix Boutique\" using the existing React+TypeScript template, with a clean, maintainable project structure (folders for screens/pages, navigation/routing, and shared UI/layout).",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-navigation-bottom-navigation-or-stack-navigation-that-provides-routes-to-four-placeholder-screens-dashboard-new-order-orders-list-and-order-details-wired-end-to-end-so-a-user-can-navigate-between-them",
+      "title": "Implement navigation (bottom navigation or stack navigation) that provides routes to four placeholder screens: Dashboard, New Order, Orders List, and Order Details, wired end-to-end so a user can navigate between them.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-app-is-offline-first-and-runs-without-internet-by-not-requiring-any-network-calls-for-core-navigation-rendering-and-by-adding-client-side-local-persistence-scaffolding-using-a-local-database-equivalent-appropriate-for-the-current-stack-no-cloud-sync",
+      "title": "Ensure the app is offline-first and runs without internet by not requiring any network calls for core navigation/rendering, and by adding client-side local persistence scaffolding using a local database equivalent appropriate for the current stack (no cloud sync).",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-do-not-add-authentication-flows-or-login-ui-the-app-should-be-usable-without-any-sign-in-steps",
+      "title": "Do not add authentication flows or login UI; the app should be usable without any sign-in steps.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-keep-the-backend-unused-for-this-initial-setup-do-not-build-backend-features-or-require-backend-connectivity-for-the-app-shell-navigation-or-offline-first-scaffolding",
+      "title": "Keep the backend unused for this initial setup: do not build backend features or require backend connectivity for the app shell, navigation, or offline-first scaffolding.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-coherent-distinct-visual-theme-colors-typography-spacing-and-layout-appropriate-for-a-private-single-owner-boutique-business-app-and-use-it-consistently-across-the-app-shell-and-placeholder-screens-without-adding-business-ui-logic",
+      "title": "Apply a coherent, distinct visual theme (colors, typography, spacing, and layout) appropriate for a private single-owner boutique business app, and use it consistently across the app shell and placeholder screens (without adding business UI logic).",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-dashboard-screen-that-reads-orders-from-the-existing-offline-local-database-indexeddb-and-displays-four-metric-tiles-computed-from-that-local-data-1-deliver-today-count-of-orders-where-deliverydate-is-today-and-status-is-pending-2-pending-orders-count-of-orders-where-status-is-pending-3-this-week-s-deliveries-count-of-orders-where-deliverydate-is-within-the-next-7-days-inclusive-of-today-4-total-orders-count-of-all-orders",
+      "title": "Implement a Dashboard screen that reads orders from the existing offline local database (IndexedDB) and displays four metric tiles computed from that local data: (1) Deliver Today = count of orders where deliveryDate is today AND status is \"Pending\"; (2) Pending Orders = count of orders where status is \"Pending\"; (3) This Week’s Deliveries = count of orders where deliveryDate is within the next 7 days (inclusive of today); (4) Total Orders = count of all orders.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-dashboard-ui-to-use-a-tile-based-layout-with-color-coded-tiles-and-add-a-floating-new-order-action-button-that-navigates-to-the-existing-new-order-screen-using-the-app-s-navigationprovider",
+      "title": "Update the Dashboard UI to use a tile-based layout with color-coded tiles and add a floating \"+ New Order\" action button that navigates to the existing \"new-order\" screen using the app’s NavigationProvider.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-recent-orders-section-on-the-dashboard-that-lists-the-last-5-created-orders-from-the-local-database-showing-order-id-customer-name-delivery-date-and-a-status-badge-for-each-order",
+      "title": "Add a \"Recent Orders\" section on the Dashboard that lists the last 5 created orders from the local database, showing: Order ID, Customer Name, Delivery Date, and a Status badge for each order.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-dashboard-refreshes-automatically-when-new-orders-are-added-to-the-local-database-without-requiring-a-full-page-reload-e-g-by-invalidating-refetching-the-local-orders-query-when-the-local-db-is-written-to",
+      "title": "Ensure the Dashboard refreshes automatically when new orders are added to the local database, without requiring a full page reload (e.g., by invalidating/refetching the local orders query when the local DB is written to).",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-local-database-service-layer-to-provide-typed-order-specific-read-helpers-required-by-the-dashboard-including-reading-all-orders-and-obtaining-the-most-recent-orders-by-createdat-while-keeping-storage-offline-first-and-within-indexeddb",
+      "title": "Extend the local database service layer to provide typed, order-specific read helpers required by the Dashboard (including reading all orders and obtaining the most recent orders by createdAt), while keeping storage offline-first and within IndexedDB.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-global-design-tokens-to-match-the-provided-design-system-colors-and-apply-them-consistently-across-the-app-primary-800020-deep-burgundy-secondary-ffd700-gold-background-fffdd0-cream-text-36454f",
+      "title": "Update the global design tokens to match the provided design system colors and apply them consistently across the app: Primary #800020 (Deep Burgundy), Secondary #FFD700 (Gold), Background #FFFDD0 (Cream), Text #36454F.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-boutique-luxury-ui-styling-across-core-layout-and-screens-using-tailwind-shadcn-composition-rounded-cards-soft-shadows-and-smooth-transitions-for-interactive-elements-buttons-list-items-nav-items-cards",
+      "title": "Apply boutique luxury UI styling across core layout and screens using Tailwind + shadcn composition: rounded cards, soft shadows, and smooth transitions for interactive elements (buttons, list items, nav items, cards).",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-adjust-the-app-shell-and-screen-layout-to-be-mobile-first-for-a-375-414px-viewport-tune-max-content-width-spacing-and-fixed-position-elements-e-g-dashboard-floating-action-button-so-they-fit-comfortably-on-small-devices-without-overlapping-key-ui-including-the-bottom-navigation",
+      "title": "Adjust the app shell and screen layout to be mobile-first for a 375–414px viewport: tune max content width, spacing, and fixed-position elements (e.g., Dashboard floating action button) so they fit comfortably on small devices without overlapping key UI (including the bottom navigation).",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-placeholder-ui-data-and-ensure-screens-only-show-real-data-from-the-local-indexeddb-or-clear-empty-states-when-there-is-no-data-specifically-remove-sample-navigation-actions-and-placeholder-copy-that-implies-fake-content-replace-with-offline-safe-empty-states-and-real-list-detail-wiring-where-applicable",
+      "title": "Remove placeholder UI/data and ensure screens only show real data from the local IndexedDB (or clear empty states when there is no data). Specifically: remove “sample” navigation/actions and placeholder copy that implies fake content; replace with offline-safe empty states and real list/detail wiring where applicable.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-preserve-fast-load-and-offline-safe-behavior-during-polish-do-not-introduce-network-requirements-for-rendering-navigation-ensure-all-polished-ui-renders-without-waiting-on-network-resources-and-continues-to-operate-offline",
+      "title": "Preserve fast-load and offline-safe behavior during polish: do not introduce network requirements for rendering/navigation; ensure all polished UI renders without waiting on network resources and continues to operate offline.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-offline-only-export-actions-that-generate-and-download-a-csv-file-for-a-today-s-orders-and-b-this-week-s-orders-sourced-exclusively-from-the-local-indexeddb-orders-data-no-backend-calls-no-internet-required",
+      "title": "Add offline-only export actions that generate and download a CSV file for (a) today’s orders and (b) this week’s orders, sourced exclusively from the local IndexedDB orders data (no backend calls, no internet required).",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-printable-offline-safe-summary-view-that-can-be-opened-in-app-and-printed-using-the-browser-s-print-dialog-showing-a-clear-summary-of-daily-and-weekly-orders-sourced-from-indexeddb",
+      "title": "Create a printable, offline-safe “Summary” view that can be opened in-app and printed using the browser’s print dialog, showing a clear summary of daily and weekly orders sourced from IndexedDB.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-export-and-print-entry-points-into-the-existing-navigation-and-screens-without-adding-authentication-or-backend-dependencies-e-g-add-an-export-or-reports-entry-point-from-the-orders-list-screen-and-add-a-new-navigation-route-screen-for-printing",
+      "title": "Integrate export and print entry points into the existing navigation and screens without adding authentication or backend dependencies (e.g., add an “Export” or “Reports” entry point from the Orders List screen and add a new navigation route/screen for printing).",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-set-up-and-commit-a-clean-reproducible-mobile-release-build-configuration-so-the-project-can-produce-android-apk-aab-and-ios-ipa-artifacts-from-the-current-react-typescript-frontend",
+      "title": "Set up and commit a clean, reproducible mobile release build configuration so the project can produce Android APK/AAB and iOS IPA artifacts from the current React+TypeScript frontend.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-production-build-uses-production-safe-configuration-remove-or-guard-debug-logging-ensure-consistent-environment-handling-and-eliminate-any-development-only-behavior-that-would-ship-to-end-users",
+      "title": "Ensure the production build uses production-safe configuration: remove or guard debug logging, ensure consistent environment handling, and eliminate any development-only behavior that would ship to end users.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-deliver-production-ready-app-assets-for-android-and-ios-packaging-including-app-icons-and-splash-launch-imagery-and-wire-them-into-the-mobile-build-so-they-appear-correctly-on-device",
+      "title": "Deliver production-ready app assets for Android and iOS packaging, including app icons and splash/launch imagery, and wire them into the mobile build so they appear correctly on-device.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-any-demo-sample-seed-data-paths-so-the-production-build-never-populates-indexeddb-with-fake-orders-and-the-ui-only-reflects-real-user-entered-data-or-empty-states",
+      "title": "Remove any demo/sample/seed data paths so the production build never populates IndexedDB with fake orders and the UI only reflects real user-entered data or empty states.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-concise-production-build-documentation-for-maintainers-covering-release-build-commands-signing-requirements-placeholders-steps-and-how-to-generate-android-and-ios-release-artifacts-without-introducing-backend-dependencies",
+      "title": "Add concise production build documentation for maintainers covering release build commands, signing requirements (placeholders/steps), and how to generate Android and iOS release artifacts without introducing backend dependencies.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-reproduce-the-reported-deployment-failure-identify-the-concrete-root-cause-capture-the-exact-error-message-stack-and-implement-the-minimal-code-config-changes-needed-so-the-project-deploys-successfully",
+      "title": "Reproduce the reported deployment failure, identify the concrete root cause (capture the exact error message/stack), and implement the minimal code/config changes needed so the project deploys successfully.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-duplicate-react-query-provider-setup-so-there-is-only-a-single-queryclientprovider-in-the-app-tree-frontend-src-main-tsx-is-immutable-ensuring-the-production-build-does-not-fail-or-warn-due-to-provider-duplication-or-inconsistent-queryclient-usage",
+      "title": "Fix the duplicate React Query provider setup so there is only a single QueryClientProvider in the app tree (frontend/src/main.tsx is immutable), ensuring the production build does not fail or warn due to provider duplication or inconsistent QueryClient usage.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-frontend-order-data-model-used-for-indexeddb-persistence-to-include-pricing-payment-and-audit-fields-pricetotal-number-advancepaid-number-balanceamount-number-paymentstatus-unpaid-partial-paid-paymentmethod-cash-upi-card-other-and-notes-optional-string",
+      "title": "Extend the frontend Order data model (used for IndexedDB persistence) to include pricing, payment, and audit fields: priceTotal (number), advancePaid (number), balanceAmount (number), paymentStatus (\"Unpaid\" | \"Partial\" | \"Paid\"), paymentMethod (\"Cash\" | \"UPI\" | \"Card\" | \"Other\"), and notes (optional string).",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-automatic-calculation-normalization-for-derived-payment-fields-so-that-balanceamount-always-equals-pricetotal-advancepaid-and-paymentstatus-automatically-reflects-the-amounts-unpaid-when-advancepaid-0-and-pricetotal-0-partial-when-0-advancepaid-pricetotal-paid-when-advancepaid-pricetotal-also-clamp-negative-invalid-numeric-inputs-to-safe-values-during-normalization-to-prevent-nan-infinity-from-propagating-into-ui-exports",
+      "title": "Implement automatic calculation/normalization for derived payment fields so that balanceAmount always equals (priceTotal - advancePaid) and paymentStatus automatically reflects the amounts: Unpaid when advancePaid <= 0 and priceTotal > 0; Partial when 0 < advancePaid < priceTotal; Paid when advancePaid >= priceTotal; also clamp negative/invalid numeric inputs to safe values during normalization to prevent NaN/Infinity from propagating into UI/exports.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-migrate-existing-indexeddb-stored-orders-safely-to-include-the-new-fields-with-default-values-without-data-loss-bump-the-indexeddb-schema-version-and-during-upgrade-update-existing-order-records-to-have-defaults-pricetotal-0-advancepaid-0-balanceamount-0-paymentstatus-unpaid-paymentmethod-cash-notes-while-preserving-all-existing-order-fields-id-orderid-customername-dates-measurements-productdetails-images-status-deliveredat-createdat",
+      "title": "Migrate existing IndexedDB-stored orders safely to include the new fields with default values, without data loss. Bump the IndexedDB schema version and, during upgrade, update existing order records to have defaults (priceTotal=0, advancePaid=0, balanceAmount=0, paymentStatus=\"Unpaid\", paymentMethod=\"Cash\", notes=\"\") while preserving all existing order fields (id/orderId/customerName/dates/measurements/productDetails/images/status/deliveredAt/createdAt).",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-order-details-screen-to-display-the-new-pricing-payment-fields-and-notes-in-english-using-the-same-boutique-card-styling-as-existing-sections-if-notes-is-empty-show-an-appropriate-empty-state-label-e-g-no-notes",
+      "title": "Update the Order Details screen to display the new pricing/payment fields and notes (in English), using the same boutique card styling as existing sections. If notes is empty, show an appropriate empty state label (e.g., \"No notes\").",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-placeholder-new-order-screen-with-an-offline-first-order-form-that-includes-the-pricing-payment-fields-total-price-required-numeric-input-advance-paid-optional-numeric-input-balance-amount-auto-calculated-read-only-payment-method-dropdown-and-payment-status-auto-derived-read-only",
+      "title": "Replace the current placeholder New Order screen with an offline-first order form that includes the pricing/payment fields: Total Price (required numeric input), Advance Paid (optional numeric input), Balance Amount (auto-calculated, read-only), Payment Method (dropdown), and Payment Status (auto-derived, read-only).",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-pricing-payment-calculation-and-validation-behavior-on-new-order-and-edit-order-screens-balance-amount-total-price-advance-paid-payment-status-derived-from-amounts-0-paid-unpaid-partial-partial-fully-paid-paid-validate-that-total-price-is-0-and-advance-paid-is-not-greater-than-total-price",
+      "title": "Implement the pricing/payment calculation and validation behavior on New Order and Edit Order screens: Balance Amount = Total Price - Advance Paid; Payment Status derived from amounts (0 paid -> Unpaid, partial -> Partial, fully paid -> Paid); validate that Total Price is >= 0 and Advance Paid is not greater than Total Price.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-edit-order-screen-that-allows-editing-an-existing-order-s-pricing-payment-fields-total-price-advance-paid-payment-method-while-keeping-balance-amount-and-payment-status-auto-derived-and-read-only",
+      "title": "Add an Edit Order screen that allows editing an existing order’s pricing/payment fields (Total Price, Advance Paid, Payment Method) while keeping Balance Amount and Payment Status auto-derived and read-only.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-persist-pricing-payment-changes-offline-by-saving-new-orders-and-edited-orders-to-the-existing-indexeddb-orders-store-and-ensure-the-rest-of-the-app-dashboard-orders-list-order-details-reflects-the-updates-via-the-existing-live-query-invalidation-mechanism",
+      "title": "Persist pricing/payment changes offline by saving new orders and edited orders to the existing IndexedDB orders store, and ensure the rest of the app (Dashboard, Orders List, Order Details) reflects the updates via the existing live query invalidation mechanism.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-update-payment-action-in-the-order-details-screen-that-is-available-when-an-order-is-loaded-using-english-user-facing-text",
+      "title": "Add an \"Update Payment\" action in the Order Details screen that is available when an order is loaded, using English user-facing text.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-offline-first-update-payment-flow-that-supports-a-recording-an-additional-payment-amount-and-b-updating-the-total-advance-paid-value-and-always-recalculates-balanceamount-and-paymentstatus-using-the-same-rules-as-existing-pricing-payment-behavior",
+      "title": "Implement an offline-first \"Update Payment\" flow that supports (a) recording an additional payment amount and (b) updating the total advance paid value, and always recalculates balanceAmount and paymentStatus using the same rules as existing pricing/payment behavior.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-offline-order-data-model-stored-in-indexeddb-to-preserve-payment-history-entries-for-each-payment-update-and-migrate-existing-stored-orders-safely-by-adding-a-default-empty-payment-history-field",
+      "title": "Extend the offline Order data model stored in IndexedDB to preserve payment history entries for each payment update, and migrate existing stored orders safely by adding a default empty payment history field.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-allow-audit-notes-to-be-attached-to-payment-updates-and-persist-them-in-a-way-that-is-preserved-alongside-the-payment-history",
+      "title": "Allow audit notes to be attached to payment updates and persist them in a way that is preserved alongside the payment history.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-display-a-payment-history-section-on-the-order-details-screen-that-lists-recorded-payment-updates-in-reverse-chronological-order-with-clear-formatting-and-an-empty-state-when-no-history-exists",
+      "title": "Display a \"Payment History\" section on the Order Details screen that lists recorded payment updates in reverse chronological order with clear formatting and an empty state when no history exists.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-frontend-only-audit-calculation-utilities-module-that-computes-aggregate-metrics-from-the-offline-indexeddb-order-dataset-without-any-backend-calls",
+      "title": "Create a frontend-only audit calculation utilities module that computes aggregate metrics from the offline IndexedDB Order dataset, without any backend calls.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-audit-filters-for-today-this-week-this-month-and-custom-date-range-and-apply-filtering-based-on-a-configurable-date-basis-of-either-order-bookingdate-or-order-deliveredat",
+      "title": "Implement audit filters for Today, This Week, This Month, and Custom date range, and apply filtering based on a configurable date basis of either order.bookingDate or order.deliveredAt.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-compute-total-collected-using-both-the-current-advancepaid-value-and-the-order-payment-history-so-that-additional-payments-recorded-via-paymenthistory-are-accounted-for-without-double-counting",
+      "title": "Compute Total Collected using both the current advancePaid value and the order payment history, so that additional payments recorded via paymentHistory are accounted for without double-counting.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-new-frontend-screen-named-audit-accounts-that-reads-orders-from-the-existing-offline-indexeddb-live-query-and-displays-three-sections-1-summary-cards-total-revenue-amount-collected-pending-balance-total-orders-2-time-filters-today-this-week-this-month-custom-date-range-3-payment-breakdown-paid-orders-count-partial-orders-count-unpaid-orders-count-all-user-facing-text-must-be-english-and-all-currency-values-must-display-the-symbol-clearly",
+      "title": "Create a new frontend screen named \"Audit & Accounts\" that reads orders from the existing offline IndexedDB live query and displays three sections: (1) Summary Cards: Total Revenue, Amount Collected, Pending Balance, Total Orders; (2) Time Filters: Today, This Week, This Month, Custom Date Range; (3) Payment Breakdown: Paid Orders count, Partial Orders count, Unpaid Orders count. All user-facing text must be English and all currency values must display the ₹ symbol clearly.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-wire-the-new-audit-accounts-screen-into-the-existing-in-app-navigation-so-it-can-be-opened-from-the-app-ui-without-modifying-any-immutable-frontend-paths",
+      "title": "Wire the new \"Audit & Accounts\" screen into the existing in-app navigation so it can be opened from the app UI, without modifying any immutable frontend paths.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-existing-audit-calculation-utilities-to-support-the-audit-accounts-screen-requirements-by-providing-counts-for-paid-partial-and-unpaid-orders-separately-not-combining-partial-into-unpaid-while-keeping-the-existing-totals-revenue-collected-outstanding-orders-count-compatible-with-current-usage",
+      "title": "Extend the existing audit calculation utilities to support the Audit & Accounts screen requirements by providing counts for Paid, Partial, and Unpaid orders separately (not combining Partial into Unpaid), while keeping the existing totals (revenue, collected, outstanding, orders count) compatible with current usage.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-consistent-currency-formatting-for-the-audit-accounts-screen-totals-total-revenue-amount-collected-pending-balance-and-ensure-values-remain-safe-to-render-no-nan-infinity-shown-even-if-underlying-numeric-fields-are-missing-or-invalid",
+      "title": "Implement consistent ₹ currency formatting for the Audit & Accounts screen totals (Total Revenue, Amount Collected, Pending Balance) and ensure values remain safe to render (no NaN/Infinity shown), even if underlying numeric fields are missing or invalid.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-two-new-offline-audit-csv-export-actions-weekly-audit-csv-and-monthly-audit-csv-sourced-exclusively-from-the-local-indexeddb-orders-data-no-backend-calls-no-internet-required",
+      "title": "Add two new offline audit CSV export actions: \"Weekly Audit CSV\" and \"Monthly Audit CSV\", sourced exclusively from the local IndexedDB orders data (no backend calls, no internet required).",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-weekly-audit-csv-and-monthly-audit-csv-generation-so-the-csv-includes-exactly-these-columns-in-this-order-order-id-customer-name-total-price-paid-amount-balance-amount-payment-status-payment-method-delivery-date",
+      "title": "Implement the Weekly Audit CSV and Monthly Audit CSV generation so the CSV includes exactly these columns (in this order): Order ID, Customer Name, Total Price, Paid Amount, Balance Amount, Payment Status, Payment Method, Delivery Date.",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-define-and-apply-audit-period-filters-for-the-new-exports-weekly-audit-csv-and-monthly-audit-csv-must-select-orders-by-delivery-date-for-the-relevant-period-using-local-timezone-safe-boundaries",
+      "title": "Define and apply audit period filters for the new exports: Weekly Audit CSV and Monthly Audit CSV must select orders by delivery date for the relevant period, using local-timezone-safe boundaries.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-new-printable-offline-safe-printable-audit-summary-view-that-can-be-opened-in-app-and-printed-using-the-browser-s-print-dialog-showing-weekly-and-monthly-audit-summaries-sourced-from-indexeddb-and-wire-it-into-the-existing-navigation-and-reports-screen",
+      "title": "Add a new printable, offline-safe \"Printable Audit Summary\" view that can be opened in-app and printed using the browser’s print dialog, showing weekly and monthly audit summaries sourced from IndexedDB, and wire it into the existing navigation and Reports screen.",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-generate-an-android-release-apk-artifact-for-phoenix-boutique-suitable-for-installation-distribution-using-the-existing-mobile-release-build-configuration-and-make-the-produced-apk-available-as-a-build-output-with-a-clearly-identifiable-filename",
+      "title": "Generate an Android **release** APK artifact for Phoenix Boutique suitable for installation/distribution, using the existing mobile release build configuration, and make the produced APK available as a build output with a clearly identifiable filename.",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Set up new cross-platform mobile app project \"Phoenix Boutique\" targeting Android and iOS",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Implement app shell with navigation (bottom tabs or stack) and route wiring only",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Create empty placeholder screens: Dashboard, New Order, Orders List, Order Details (no UI logic yet)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Configure offline-first local persistence using SQLite (or equivalent) with app runnable without internet",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Ensure app has no authentication and no backend/cloud sync dependencies",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Build Dashboard screen powered by local database: 4 metric tiles (Deliver Today, Pending Orders, This Week’s Deliveries, Total Orders), recent orders list (last 5) with status badge, color-coded tile UI, floating '+ New Order' button, and auto-refresh when new orders are added",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Implement Order Details screen functionality: show full order fields, swipeable image gallery, Edit Order navigation, Mark as Delivered (update status + deliveredAt), Delete with confirmation, and auto-refresh on screen focus",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Add offline export functionality using local database only: export daily orders as CSV, export weekly orders as CSV, and provide a printable summary view (no internet required)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Apply final UI/UX polish with luxury boutique feel using design system colors (Primary #800020, Secondary #FFD700, Background #FFFDD0, Text #36454F), rounded cards, soft shadows, smooth transitions, mobile-first layout (375–414px), fast load, offline-safe flows, and no placeholder data",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Prepare final production builds: Android APK/AAB and iOS IPA ready, clean release build configuration, production-ready assets, and ensure no demo/sample data is included",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Extend Order data model for pricing/payment + audit notes: add priceTotal, advancePaid, balanceAmount (auto), paymentStatus (auto: Unpaid/Partial/Paid), paymentMethod (Cash/UPI/Card/Other), notes; include safe migration/defaults for existing orders",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Update New Order and Edit Order screens to include pricing/payment fields (Total Price required, Advance Paid optional, Balance auto-readonly, Payment Method dropdown, Payment Status auto-derived) with validation (price >= 0, advance <= total) and derived-field behavior (balance = total - advance; status Unpaid/Partial/Paid)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Add an Order Details \"Update Payment\" action to record additional payments after order creation (update advance/full payment), auto-recalculate balance and payment status, preserve payment history, and allow adding audit notes",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Implement audit/analytics calculation utilities for orders: compute Total Revenue, Total Collected (advancePaid + payment history), Total Outstanding, Orders Count, and Paid vs Unpaid breakdown with filters (Today/This Week/This Month/Custom range) and configurable date basis (bookingDate or deliveredAt)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Create an \"Audit & Accounts\" screen with Summary Cards (Total Revenue, Amount Collected, Pending Balance, Total Orders), Time Filters (Today/This Week/This Month/Custom Date Range), and Payment Breakdown (Paid/Partial/Unpaid order counts) with clear ₹ currency display",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Add offline-only audit export features: Weekly Audit CSV and Monthly Audit CSV (columns: Order ID, Customer Name, Total Price, Paid Amount, Balance Amount, Payment Status, Payment Method, Delivery Date) plus a printable audit summary view (all sourced from local DB; no internet/backend)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Generate an Android release APK artifact for installation/distribution (build output deliverable)",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Phoenix Boutique",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

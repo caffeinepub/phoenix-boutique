@@ -1,0 +1,27 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-generate-an-android-release-apk-artifact-for-phoenix-boutique-suitable-for-installation-distribution-using-the-existing-mobile-release-build-configuration-and-make-the-produced-apk-available-as-a-build-output-with-a-clearly-identifiable-filename",
+      "featureTitle": "Generate an Android **release** APK artifact for Phoenix Boutique suitable for installation/distribution, using the existing mobile release build configuration, and make the produced APK available as a build output with a clearly identifiable filename.",
+      "files": [
+        "frontend/ANDROID_RELEASE.md",
+        "frontend/android/keystore.properties.example",
+        "frontend/android/keystores/README.md",
+        "frontend/build-outputs/.gitkeep",
+        "frontend/scripts/build-android-release-apk.sh"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-51"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

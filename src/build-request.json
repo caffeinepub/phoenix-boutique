@@ -1,0 +1,49 @@
+{
+  "kind": "build_request",
+  "title": "Generate Android release APK artifact for Phoenix Boutique",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-51",
+      "text": "Generate an Android **release** APK artifact for Phoenix Boutique suitable for installation/distribution, using the existing mobile release build configuration, and make the produced APK available as a build output with a clearly identifiable filename.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-8"
+        ],
+        "quotes": [
+          "a release APK (for installation/distribution)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A release APK can be produced successfully from the repository using the existing release build configuration (no manual code edits required to complete the build).",
+        "The build outputs a single, clearly named APK file (e.g., PhoenixBoutique-release.apk) and its location/path is documented for maintainers.",
+        "If release signing requires a keystore that is not committed, the build uses placeholders safely (no secrets committed) and the documentation clearly states what values/steps are required to sign the release APK for distribution."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not add any backend dependencies; backend must remain unused for producing the APK.",
+    "Do not modify immutable frontend paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
+    "All user-facing text must be English."
+  ],
+  "nonGoals": [
+    "Generating a debug APK.",
+    "Generating iOS IPA artifacts.",
+    "Adding any new authentication or network-required functionality."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Android release APK build output for Phoenix Boutique",
+  "requirements": [
+    {
+      "id": "REQ-51",
+      "summary": "Provide a repeatable Android release APK build process that produces a single clearly named artifact and documents release signing requirements without committing secrets.",
+      "acceptanceCriteria": [
+        "A release APK can be produced successfully from the repository using the existing release build configuration (no manual code edits required to complete the build).",
+        "The build outputs a single, clearly named APK file (e.g., PhoenixBoutique-release.apk) and its location/path is documented for maintainers.",
+        "If release signing requires a keystore that is not committed, the build uses placeholders safely (no secrets committed) and the documentation clearly states what values/steps are required to sign the release APK for distribution."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/ANDROID_RELEASE.md",
+          "operation": "create",
+          "description": "Add maintainer documentation for producing the Android *release* APK using the existing mobile release build configuration, including: prerequisites, exact build command(s), where the unsigned/signed release APK is generated, and a post-build step that ensures a single final artifact is named clearly (e.g., PhoenixBoutique-release.apk) with its final path documented. Include a section on signing that explicitly states required keystore inputs/steps without committing secrets."
+        },
+        {
+          "path": "frontend/scripts/build-android-release-apk.sh",
+          "operation": "create",
+          "description": "Add a build helper script that runs the existing Android release build, then copies/renames the produced release APK into a single clearly identifiable build output file named PhoenixBoutique-release.apk under a documented folder (e.g., frontend/build-outputs/). The script must avoid requiring manual code edits to complete the build and must not embed secrets."
+        },
+        {
+          "path": "frontend/build-outputs/.gitkeep",
+          "operation": "create",
+          "description": "Create a tracked build output directory placeholder so maintainers have a stable documented location for the final PhoenixBoutique-release.apk artifact produced by the build script."
+        },
+        {
+          "path": "frontend/android/keystore.properties.example",
+          "operation": "create",
+          "description": "Provide an example/placeholder signing properties file (no secrets) documenting the expected property names/values required by the existing release signing configuration. This file must be safe to commit and referenced by frontend/ANDROID_RELEASE.md."
+        },
+        {
+          "path": "frontend/android/keystores/README.md",
+          "operation": "create",
+          "description": "Add documentation indicating where a non-committed release keystore should be placed locally (or injected in CI) and how it maps to the placeholder signing configuration. Ensure wording is English and explicitly warns not to commit keystores or passwords."
+        }
+      ]
+    }
+  ]
+}

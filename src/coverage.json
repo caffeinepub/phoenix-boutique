@@ -1,32 +1,83 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T07:04:32.405Z",
+  "generatedAt": "2026-02-08T16:05:39.933Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 1,
+    "total": 5,
+    "implemented": 5,
     "items": [
       {
-        "id": "REQ-51",
-        "summary": "Generate an Android **release** APK artifact for Phoenix Boutique suitable for installation/distribution, using the existing mobile release build configuration, and make the produced APK available as a build output with a clearly identifiable filename.",
+        "id": "REQ-77",
+        "summary": "Implement a Firestore audit logging service that writes documents to the `/auditLogs` collection for these actions: Order created, Order updated, Payment updated, Order deleted. Each log entry must include: action (string enum), orderId (use the human-facing `order.orderId`), localId when available, actor userId, actor role, timestamp, and a small `details` object for action-specific metadata (e.g., payment amount/mode for payment updates). Logging must be best-effort and must not break offline-first behavior: if Firebase/Firestore is not configured or the user is not authenticated, the app must continue normally and the audit write must be skipped with a safe error message (no crashes).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/ANDROID_RELEASE.md",
-          "frontend/scripts/build-android-release-apk.sh",
-          "frontend/build-outputs/.gitkeep",
-          "frontend/android/keystore.properties.example",
-          "frontend/android/keystores/README.md"
+          "frontend/src/firebase/auditLogs.ts",
+          "frontend/src/firebase/firebaseApp.ts"
         ],
         "matchedFiles": [
-          "frontend/ANDROID_RELEASE.md",
-          "frontend/scripts/build-android-release-apk.sh",
-          "frontend/build-outputs/.gitkeep",
-          "frontend/android/keystore.properties.example",
-          "frontend/android/keystores/README.md"
+          "frontend/src/firebase/auditLogs.ts"
+        ]
+      },
+      {
+        "id": "REQ-78",
+        "summary": "Wire audit logging calls into the existing app flows so the correct audit action is recorded at the time the action occurs: (1) after a successful local order creation, (2) after a successful local order update (including edits), (3) after a successful payment update (from the Update Payment dialog), and (4) after a successful order delete. Use the currently authenticated Firebase user (uid) and current role state when available; do not introduce any new authentication requirements for core app usage.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/screens/NewOrderScreen.tsx",
+          "frontend/src/screens/EditOrderScreen.tsx",
+          "frontend/src/screens/UpdatePaymentDialog.tsx",
+          "frontend/src/screens/OrderDetailsScreen.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/screens/NewOrderScreen.tsx",
+          "frontend/src/screens/EditOrderScreen.tsx",
+          "frontend/src/screens/UpdatePaymentDialog.tsx",
+          "frontend/src/screens/OrderDetailsScreen.tsx"
+        ]
+      },
+      {
+        "id": "REQ-79",
+        "summary": "Add an ADMIN-only Audit Logs screen that lists recent audit log entries from Firestore `/auditLogs` in reverse chronological order (newest first), with clear English labels and formatting. The screen must be fully inaccessible to STAFF: it must be hidden from STAFF navigation entry points and must show an access denied screen if a STAFF user reaches the route indirectly. Include at minimum: action label, orderId, actor userId (or email if readily available from auth state), and timestamp.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/screens/AuditLogsScreen.tsx",
+          "frontend/src/firebase/auditLogs.ts",
+          "frontend/src/layout/AppShell.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/screens/AuditLogsScreen.tsx",
+          "frontend/src/firebase/auditLogs.ts",
+          "frontend/src/layout/AppShell.tsx"
+        ]
+      },
+      {
+        "id": "REQ-80",
+        "summary": "Integrate the Audit Logs screen into the existing in-app navigation for ADMIN users by adding an entry point in the Reports screen and adding a new navigation route/screen key handled by the app shell routing. Do not modify any immutable frontend paths.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/navigation/NavigationProvider.tsx",
+          "frontend/src/layout/AppShell.tsx",
+          "frontend/src/screens/ReportsScreen.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/navigation/NavigationProvider.tsx",
+          "frontend/src/layout/AppShell.tsx",
+          "frontend/src/screens/ReportsScreen.tsx"
+        ]
+      },
+      {
+        "id": "REQ-81",
+        "summary": "Add concise documentation for required Firestore security rules for `/auditLogs` so that only ADMIN can read logs while authenticated users can write logs. Place the snippet in an existing Firebase setup doc (e.g., `frontend/FIREBASE_SETUP.md`) and keep it in English.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/FIREBASE_SETUP.md"
+        ],
+        "matchedFiles": [
+          "frontend/FIREBASE_SETUP.md"
         ]
       }
     ]
@@ -36,11 +87,18 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/ANDROID_RELEASE.md",
-    "frontend/android/keystore.properties.example",
-    "frontend/android/keystores/README.md",
-    "frontend/build-outputs/.gitkeep",
-    "frontend/scripts/build-android-release-apk.sh",
+    "frontend/FIREBASE_SETUP.md",
+    "frontend/src/firebase/auditLogs.ts",
+    "frontend/src/layout/AppShell.tsx",
+    "frontend/src/navigation/NavigationProvider.tsx",
+    "frontend/src/screens/AuditLogsScreen.tsx",
+    "frontend/src/screens/DashboardScreen.tsx",
+    "frontend/src/screens/EditOrderScreen.tsx",
+    "frontend/src/screens/NewOrderScreen.tsx",
+    "frontend/src/screens/OrderDetailsScreen.tsx",
+    "frontend/src/screens/OrdersListScreen.tsx",
+    "frontend/src/screens/ReportsScreen.tsx",
+    "frontend/src/screens/UpdatePaymentDialog.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

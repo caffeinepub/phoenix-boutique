@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ScreenTitle } from '../shared/ui/ScreenTitle';
 import { useNavigation } from '../navigation/NavigationProvider';
+import { useRole } from '../rbac/useRole';
 import { createOrder } from '../services/ordersRepository';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,9 +15,13 @@ import { CalendarIcon, IndianRupee } from 'lucide-react';
 import { format } from 'date-fns';
 import { calculateBalance, derivePaymentStatus, validatePricing, PAYMENT_METHODS, type PaymentMethod } from '../services/paymentCalculations';
 import { notifyHelper } from '../shared/ui/notify';
+import { useFirebaseAuth } from '../firebase/useFirebaseAuth';
+import { writeAuditLog } from '../firebase/auditLogs';
 
 export function NewOrderScreen() {
   const { navigateTo } = useNavigation();
+  const { permissions, role } = useRole();
+  const { user } = useFirebaseAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
@@ -30,9 +35,9 @@ export function NewOrderScreen() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
   const [notes, setNotes] = useState('');
 
-  // Derived fields
-  const priceTotalNum = parseFloat(priceTotal) || 0;
-  const advancePaidNum = parseFloat(advancePaid) || 0;
+  // Derived fields (only calculate if user can view financials)
+  const priceTotalNum = permissions.canEditFinancials ? (parseFloat(priceTotal) || 0) : 0;
+  const advancePaidNum = permissions.canEditFinancials ? (parseFloat(advancePaid) || 0) : 0;
   const balanceAmount = calculateBalance(priceTotalNum, advancePaidNum);
   const paymentStatus = derivePaymentStatus(priceTotalNum, advancePaidNum);
 
@@ -64,8 +69,8 @@ export function NewOrderScreen() {
       return;
     }
 
-    // Validate pricing
-    if (validation.priceTotalError || validation.advancePaidError) {
+    // Validate pricing (only if user can edit financials)
+    if (permissions.canEditFinancials && (validation.priceTotalError || validation.advancePaidError)) {
       notifyHelper.error('Please fix pricing errors');
       return;
     }
@@ -92,7 +97,22 @@ export function NewOrderScreen() {
         paymentMethod,
         notes: notes.trim(),
         paymentHistory: [],
+        // Sync tracking fields with defaults
+        cloudId: null,
+        syncStatus: 'pending',
+        lastSyncedAt: null,
       });
+
+      // Best-effort audit log (non-blocking)
+      if (user) {
+        await writeAuditLog(
+          'order_created',
+          orderId,
+          user.uid,
+          role,
+          {}
+        );
+      }
 
       notifyHelper.success('Order created successfully');
       navigateTo('dashboard');
@@ -182,86 +202,78 @@ export function NewOrderScreen() {
           </CardContent>
         </Card>
 
-        {/* Pricing & Payment */}
-        <Card className="shadow-soft">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <IndianRupee className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">Pricing & Payment</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="price-total">Total Price *</Label>
-              <Input
-                id="price-total"
-                type="number"
-                step="0.01"
-                min="0"
-                value={priceTotal}
-                onChange={(e) => setPriceTotal(e.target.value)}
-                placeholder="0.00"
-              />
-              {validation.priceTotalError && (
-                <p className="text-sm text-destructive">{validation.priceTotalError}</p>
-              )}
-            </div>
+        {/* Pricing & Payment - Only show for ADMIN */}
+        {permissions.canEditFinancials && (
+          <Card className="shadow-soft">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <IndianRupee className="h-5 w-5 text-primary" />
+                <CardTitle className="text-base">Pricing & Payment</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="price-total">Total Price *</Label>
+                <Input
+                  id="price-total"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={priceTotal}
+                  onChange={(e) => setPriceTotal(e.target.value)}
+                  placeholder="0.00"
+                />
+                {validation.priceTotalError && (
+                  <p className="text-sm text-destructive">{validation.priceTotalError}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="advance-paid">Advance Paid</Label>
-              <Input
-                id="advance-paid"
-                type="number"
-                step="0.01"
-                min="0"
-                value={advancePaid}
-                onChange={(e) => setAdvancePaid(e.target.value)}
-                placeholder="0.00"
-              />
-              {validation.advancePaidError && (
-                <p className="text-sm text-destructive">{validation.advancePaidError}</p>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="advance-paid">Advance Paid</Label>
+                <Input
+                  id="advance-paid"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={advancePaid}
+                  onChange={(e) => setAdvancePaid(e.target.value)}
+                  placeholder="0.00"
+                />
+                {validation.advancePaidError && (
+                  <p className="text-sm text-destructive">{validation.advancePaidError}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="balance-amount">Balance Amount (Auto-calculated)</Label>
-              <Input
-                id="balance-amount"
-                type="text"
-                value={`₹${balanceAmount.toFixed(2)}`}
-                readOnly
-                className="bg-muted"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="payment-method">Payment Method</Label>
+                <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
+                  <SelectTrigger id="payment-method">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_METHODS.map((method) => (
+                      <SelectItem key={method} value={method}>
+                        {method}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="payment-status">Payment Status (Auto-calculated)</Label>
-              <Input
-                id="payment-status"
-                type="text"
-                value={paymentStatus}
-                readOnly
-                className="bg-muted"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="payment-method">Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
-                <SelectTrigger id="payment-method">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_METHODS.map((method) => (
-                    <SelectItem key={method} value={method}>
-                      {method}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+              {/* Read-only derived fields */}
+              <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Balance Amount:</span>
+                  <span className="font-medium">₹{balanceAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Payment Status:</span>
+                  <span className="font-medium">{paymentStatus}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Order Details */}
         <Card className="shadow-soft">
@@ -276,7 +288,7 @@ export function NewOrderScreen() {
                 value={measurements}
                 onChange={(e) => setMeasurements(e.target.value)}
                 placeholder="Enter measurements"
-                rows={4}
+                rows={3}
                 required
               />
             </div>
@@ -288,7 +300,7 @@ export function NewOrderScreen() {
                 value={productDetails}
                 onChange={(e) => setProductDetails(e.target.value)}
                 placeholder="Enter product details"
-                rows={4}
+                rows={3}
                 required
               />
             </div>
@@ -299,32 +311,21 @@ export function NewOrderScreen() {
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add any additional notes..."
-                rows={3}
+                placeholder="Additional notes"
+                rows={2}
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Actions */}
-        <div className="flex gap-3 pb-20">
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1"
-            onClick={() => navigateTo('dashboard')}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            className="flex-1"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Creating...' : 'Create Order'}
-          </Button>
-        </div>
+        {/* Submit Button */}
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Creating Order...' : 'Create Order'}
+        </Button>
       </form>
     </div>
   );

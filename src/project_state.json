@@ -1,18 +1,18 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 27,
-  "summary": "\"Phoenix Boutique\" mobile app scope now includes implementing a full Order Details screen, updating New Order and Edit Order screens to capture pricing/payment fields (with validation and auto-derived fields), adding an Order Details \"Update Payment\" action to record additional payments after order creation while preserving payment history and allowing audit notes, adding offline-only export features (daily/weekly order CSV exports and a printable summary view sourced from the local database), applying final UI/UX polish with a specified luxury boutique design system and performance/offline-safe requirements, preparing the app for final production builds (Android APK/AAB and iOS IPA) with clean release configuration, production-ready assets, and no demo data, extending the Order data model to support pricing/payment, payment updates/history, and audit notes with safe migration and auto-calculated/derived fields, creating an \"Audit & Accounts\" screen with summary cards, time filters (including custom date range), payment breakdown counts, and clear ₹ currency display, and adding offline-only audit export features: Weekly Audit CSV, Monthly Audit CSV (with specified columns), plus a printable audit summary view sourced from the local database.",
+  "projectStateVersion": 39,
+  "summary": "\"Phoenix Boutique\" scope includes Firebase integration while preserving offline-first behavior and the local database, plus role-based authentication/authorization. Implement Firebase Auth (Email/Password), fetch and cache user role from Firestore (/users/{uid}) for offline login, and apply role-based access control (ADMIN vs STAFF). Add an offline-to-online sync layer that uploads existing local (SQLite/IndexedDB) orders to Firestore + images to Firebase Storage with idempotency (no duplicates), triggered on app start, internet reconnect, and via a manual Sync button; persist the Firestore document ID back into the local DB and mark orders as synced. Extend the local order model to include sync tracking fields: cloudId, syncStatus, lastSyncedAt. Enhance sync with role-aware behavior and minimal conflict resolution: STAFF can sync only orders they created and must not sync financial fields; ADMIN can sync all fields and admin updates win when both roles updated the same order.",
   "architectural_notes": [
     "Cross-platform mobile app for Android and iOS (React Native / Flutter / Capacitor-based React).",
     "Offline-first: must run fully without internet.",
-    "No backend services and no cloud sync.",
-    "No authentication (single-owner private business app).",
     "Use local on-device database (SQLite or equivalent).",
     "Initial deliverable is clean project structure + navigation only; screens are placeholders without UI/business logic.",
     "Dashboard pulls metrics + recent orders via local DB queries (no network) and auto-refreshes when orders change (e.g., on screen focus and/or via a local change notification/state update mechanism).",
     "Export features must be offline-only and sourced exclusively from the on-device local database (no internet).",
     "Design system for final polish: Primary #800020 (Deep Burgundy), Secondary #FFD700 (Gold), Background #FFFDD0 (Cream), Text #36454F; luxury boutique styling with rounded cards, soft shadows, smooth transitions; optimize for 375–414px layouts.",
-    "Production release readiness: configure clean Android/iOS release build settings and ensure production assets; remove any demo/sample data from release builds."
+    "Production release readiness: configure clean Android/iOS release build settings and ensure production assets; remove any demo/sample data from release builds.",
+    "Hybrid offline + cloud: retain local on-device DB as source of offline functionality while integrating Firebase (Auth/Firestore/Storage) for optional online sync/backup; app must remain fully usable without network.",
+    "Add Firebase Authentication (Email/Password) while preserving single-owner usability/offline access patterns."
   ],
   "known_issues": [
     "Deployment/build process encountered an unspecified technical error during deployment; user requested resolution."
@@ -426,6 +426,246 @@
         "REQ-51"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-add-firebase-client-configuration-and-initialization-to-the-phoenix-boutique-frontend-using-environment-based-configuration-no-hardcoded-secrets-in-source",
+      "title": "Add Firebase client configuration and initialization to the Phoenix Boutique frontend using environment-based configuration (no hardcoded secrets in source).",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-firebase-authentication-with-email-password-including-ui-to-sign-up-sign-in-and-sign-out-without-blocking-offline-use-of-the-app",
+      "title": "Implement Firebase Authentication with Email/Password, including UI to sign up, sign in, and sign out, without blocking offline use of the app.",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-firestore-as-a-cloud-datastore-for-orders-by-adding-an-optional-sync-layer-that-can-upload-local-orders-and-download-remote-orders-when-the-user-is-authenticated-and-the-network-is-available-while-preserving-local-indexeddb-as-the-source-of-offline-truth",
+      "title": "Integrate Firestore as a cloud datastore for orders by adding an optional sync layer that can upload local orders and download remote orders when the user is authenticated and the network is available, while preserving local IndexedDB as the source of offline truth.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-firebase-storage-for-order-images-by-adding-upload-and-download-support-that-keeps-images-usable-offline-and-only-syncs-to-storage-when-online-and-authenticated",
+      "title": "Integrate Firebase Storage for order images by adding upload and download support that keeps images usable offline and only syncs to Storage when online and authenticated.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-user-accessible-sync-status-and-manual-sync-now-action-in-the-ui-that-clearly-communicates-offline-online-state-and-authentication-state-without-changing-core-navigation-behavior-or-requiring-network-for-rendering",
+      "title": "Add a user-accessible sync status and manual 'Sync now' action in the UI that clearly communicates offline/online state and authentication state, without changing core navigation behavior or requiring network for rendering.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-existing-local-orders-are-preserved-across-the-firebase-integration-rollout-and-that-no-migration-deletes-resets-or-replaces-the-current-local-orders-store",
+      "title": "Ensure existing local orders are preserved across the Firebase integration rollout and that no migration deletes, resets, or replaces the current local orders store.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-introduce-a-frontend-role-permissions-state-that-the-ui-can-read-to-determine-whether-the-current-user-is-admin-or-staff-and-default-to-the-most-restrictive-behavior-when-role-is-unknown-or-unavailable",
+      "title": "Introduce a frontend role/permissions state that the UI can read to determine whether the current user is ADMIN or STAFF, and default to the most restrictive behavior when role is unknown or unavailable.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-rbac-to-orders-list-ui-so-staff-cannot-view-financial-information-or-reach-restricted-areas-hide-disable-price-and-payment-related-displays-and-hide-disable-navigation-entry-points-to-audit-export-reporting-features-for-staff",
+      "title": "Apply RBAC to Orders List UI so STAFF cannot view financial information or reach restricted areas: hide/disable price and payment-related displays and hide/disable navigation entry points to audit/export/reporting features for STAFF.",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-rbac-to-order-details-ui-so-staff-cannot-view-or-edit-prices-payments-cannot-access-payment-history-and-cannot-perform-restricted-actions-including-delete-admin-retains-full-access",
+      "title": "Apply RBAC to Order Details UI so STAFF cannot view or edit prices & payments, cannot access payment history, and cannot perform restricted actions (including delete). ADMIN retains full access.",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-rbac-to-new-order-and-edit-order-screens-so-staff-can-create-orders-and-edit-only-non-financial-fields-while-admin-can-create-edit-including-pricing-payment-fields",
+      "title": "Apply RBAC to New Order and Edit Order screens so STAFF can create orders and edit only non-financial fields, while ADMIN can create/edit including pricing & payment fields.",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-rbac-to-reports-audit-accounts-and-export-print-features-so-staff-cannot-view-audits-exports-and-admin-can-access-all-reporting-features",
+      "title": "Apply RBAC to Reports, Audit & Accounts, and export/print features so STAFF cannot view audits/exports and ADMIN can access all reporting features.",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-admin-only-staff-management-area-in-the-ui-and-ensure-it-is-fully-hidden-disabled-for-staff",
+      "title": "Add an ADMIN-only “Staff Management” area in the UI and ensure it is fully hidden/disabled for STAFF.",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-all-restricted-ui-states-are-communicated-clearly-in-english-and-are-implemented-as-both-hiding-and-disabling-where-appropriate-to-prevent-accidental-access-paths-without-modifying-any-immutable-frontend-paths",
+      "title": "Ensure all restricted UI states are communicated clearly in English and are implemented as both hiding and disabling where appropriate (to prevent accidental access paths), without modifying any immutable frontend paths.",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-firestore-order-sync-so-that-existing-local-offline-orders-sqlite-equivalent-local-store-currently-indexeddb-are-uploaded-to-firestore-without-creating-duplicates-and-the-resulting-firestore-document-id-is-persisted-back-into-the-local-order-record",
+      "title": "Implement Firestore order sync so that existing local offline orders (SQLite-equivalent local store; currently IndexedDB) are uploaded to Firestore without creating duplicates, and the resulting Firestore document ID is persisted back into the local order record.",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-image-upload-during-sync-so-that-each-order-s-local-images-are-uploaded-to-firebase-storage-during-the-same-sync-pass-and-the-resulting-storage-urls-or-storage-paths-as-needed-are-persisted-back-into-the-local-order-record-and-included-in-the-firestore-order-document",
+      "title": "Implement image upload during sync so that each order’s local images are uploaded to Firebase Storage during the same sync pass, and the resulting Storage URLs (or storage paths as needed) are persisted back into the local order record and included in the Firestore order document.",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-wire-sync-triggers-to-run-automatically-on-1-app-start-after-offline-db-initialization-2-internet-reconnect-online-event-and-3-the-existing-manual-sync-button-without-making-the-app-require-network-connectivity-for-navigation-rendering",
+      "title": "Wire sync triggers to run automatically on (1) app start (after offline DB initialization), (2) internet reconnect (online event), and (3) the existing manual sync button, without making the app require network connectivity for navigation/rendering.",
+      "reqIds": [
+        "REQ-67"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-firebase-firestore-and-storage-stub-implementations-with-working-implementations-when-the-firebase-sdk-is-installed-and-configuration-is-present-to-support-the-order-image-sync-flow-end-to-end",
+      "title": "Replace the current Firebase Firestore and Storage stub implementations with working implementations (when the Firebase SDK is installed and configuration is present) to support the order+image sync flow end-to-end.",
+      "reqIds": [
+        "REQ-68"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-local-indexeddb-persisted-order-data-model-to-include-sync-tracking-fields-cloudid-string-null-syncstatus-pending-synced-and-lastsyncedat-timestamp-null-without-changing-or-removing-any-existing-order-fields",
+      "title": "Extend the local (IndexedDB-persisted) Order data model to include sync tracking fields: cloudId (string | null), syncStatus (\"pending\" | \"synced\"), and lastSyncedAt (timestamp | null), without changing or removing any existing order fields.",
+      "reqIds": [
+        "REQ-69"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-safe-indexeddb-schema-migration-to-backfill-the-new-sync-tracking-fields-for-existing-stored-orders-preserving-all-existing-order-data-and-values",
+      "title": "Add a safe IndexedDB schema migration to backfill the new sync tracking fields for existing stored orders, preserving all existing order data and values.",
+      "reqIds": [
+        "REQ-70"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-local-order-normalization-so-that-the-new-sync-tracking-fields-are-always-present-in-the-normalized-order-objects-returned-from-repository-read-functions-without-adding-any-new-business-rules",
+      "title": "Update local order normalization so that the new sync tracking fields are always present in the normalized Order objects returned from repository read functions, without adding any new business rules.",
+      "reqIds": [
+        "REQ-71"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-the-existing-sanitizeorderforsync-order-userrole-behavior-into-the-app-s-firestore-upload-payload-so-that-staff-uploads-exclude-all-financial-fields-pricetotal-advancepaid-balanceamount-paymentstatus-paymentmethod-while-admin-uploads-include-all-fields",
+      "title": "Integrate the existing `sanitizeOrderForSync(order, userRole)` behavior into the app’s Firestore upload payload so that STAFF uploads exclude all financial fields (`priceTotal`, `advancePaid`, `balanceAmount`, `paymentStatus`, `paymentMethod`) while ADMIN uploads include all fields.",
+      "reqIds": [
+        "REQ-72"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-wire-the-existing-syncordertocloud-localorder-user-behavior-into-the-current-pending-orders-sync-path-used-by-syncorders-in-frontend-src-services-orderssyncservice-ts-so-that-each-eligible-order-s-upload-uses-the-role-aware-sanitized-payload-staff-sanitized-admin-full",
+      "title": "Wire the existing `syncOrderToCloud(localOrder, user)` behavior into the current pending-orders sync path used by `syncOrders` (in `frontend/src/services/ordersSyncService.ts`) so that each eligible order’s upload uses the role-aware sanitized payload (STAFF sanitized, ADMIN full).",
+      "reqIds": [
+        "REQ-73"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-propagate-the-current-user-role-into-the-sync-service-from-both-auto-sync-and-manual-sync-entry-points-update-call-sites-so-role-is-available-when-triggering-sync-from-useordersautosync-and-from-the-reports-screen-manual-sync-now-action",
+      "title": "Propagate the current user role into the sync service from both auto-sync and manual sync entry points: update call sites so role is available when triggering sync from `useOrdersAutoSync` and from the Reports screen manual “Sync Now” action.",
+      "reqIds": [
+        "REQ-74"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enforce-the-staff-scope-rule-in-the-sync-flow-when-role-is-staff-only-sync-orders-created-by-that-staff-user-orders-that-are-not-verifiably-created-by-the-current-staff-user-must-be-skipped-and-must-not-be-overwritten-in-firestore",
+      "title": "Enforce the STAFF scope rule in the sync flow: when role is STAFF, only sync orders created by that STAFF user; orders that are not verifiably created by the current STAFF user must be skipped and must not be overwritten in Firestore.",
+      "reqIds": [
+        "REQ-75"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-minimal-conflict-behavior-consistent-with-if-both-admin-and-staff-updated-the-same-order-admin-changes-must-win-by-ensuring-staff-uploads-never-overwrite-financial-fields-in-firestore-and-admin-uploads-always-include-financial-fields-so-admin-writes-take-precedence-for-financial-data",
+      "title": "Implement minimal conflict behavior consistent with: “If both Admin and Staff updated the same order, Admin changes must win” by ensuring STAFF uploads never overwrite financial fields in Firestore, and ADMIN uploads always include financial fields (so ADMIN writes take precedence for financial data).",
+      "reqIds": [
+        "REQ-76"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-firestore-audit-logging-service-that-writes-documents-to-the-auditlogs-collection-for-these-actions-order-created-order-updated-payment-updated-order-deleted-each-log-entry-must-include-action-string-enum-orderid-use-the-human-facing-order-orderid-localid-when-available-actor-userid-actor-role-timestamp-and-a-small-details-object-for-action-specific-metadata-e-g-payment-amount-mode-for-payment-updates-logging-must-be-best-effort-and-must-not-break-offline-first-behavior-if-firebase-firestore-is-not-configured-or-the-user-is-not-authenticated-the-app-must-continue-normally-and-the-audit-write-must-be-skipped-with-a-safe-error-message-no-crashes",
+      "title": "Implement a Firestore audit logging service that writes documents to the `/auditLogs` collection for these actions: Order created, Order updated, Payment updated, Order deleted. Each log entry must include: action (string enum), orderId (use the human-facing `order.orderId`), localId when available, actor userId, actor role, timestamp, and a small `details` object for action-specific metadata (e.g., payment amount/mode for payment updates). Logging must be best-effort and must not break offline-first behavior: if Firebase/Firestore is not configured or the user is not authenticated, the app must continue normally and the audit write must be skipped with a safe error message (no crashes).",
+      "reqIds": [
+        "REQ-77"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-wire-audit-logging-calls-into-the-existing-app-flows-so-the-correct-audit-action-is-recorded-at-the-time-the-action-occurs-1-after-a-successful-local-order-creation-2-after-a-successful-local-order-update-including-edits-3-after-a-successful-payment-update-from-the-update-payment-dialog-and-4-after-a-successful-order-delete-use-the-currently-authenticated-firebase-user-uid-and-current-role-state-when-available-do-not-introduce-any-new-authentication-requirements-for-core-app-usage",
+      "title": "Wire audit logging calls into the existing app flows so the correct audit action is recorded at the time the action occurs: (1) after a successful local order creation, (2) after a successful local order update (including edits), (3) after a successful payment update (from the Update Payment dialog), and (4) after a successful order delete. Use the currently authenticated Firebase user (uid) and current role state when available; do not introduce any new authentication requirements for core app usage.",
+      "reqIds": [
+        "REQ-78"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-admin-only-audit-logs-screen-that-lists-recent-audit-log-entries-from-firestore-auditlogs-in-reverse-chronological-order-newest-first-with-clear-english-labels-and-formatting-the-screen-must-be-fully-inaccessible-to-staff-it-must-be-hidden-from-staff-navigation-entry-points-and-must-show-an-access-denied-screen-if-a-staff-user-reaches-the-route-indirectly-include-at-minimum-action-label-orderid-actor-userid-or-email-if-readily-available-from-auth-state-and-timestamp",
+      "title": "Add an ADMIN-only Audit Logs screen that lists recent audit log entries from Firestore `/auditLogs` in reverse chronological order (newest first), with clear English labels and formatting. The screen must be fully inaccessible to STAFF: it must be hidden from STAFF navigation entry points and must show an access denied screen if a STAFF user reaches the route indirectly. Include at minimum: action label, orderId, actor userId (or email if readily available from auth state), and timestamp.",
+      "reqIds": [
+        "REQ-79"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-the-audit-logs-screen-into-the-existing-in-app-navigation-for-admin-users-by-adding-an-entry-point-in-the-reports-screen-and-adding-a-new-navigation-route-screen-key-handled-by-the-app-shell-routing-do-not-modify-any-immutable-frontend-paths",
+      "title": "Integrate the Audit Logs screen into the existing in-app navigation for ADMIN users by adding an entry point in the Reports screen and adding a new navigation route/screen key handled by the app shell routing. Do not modify any immutable frontend paths.",
+      "reqIds": [
+        "REQ-80"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-concise-documentation-for-required-firestore-security-rules-for-auditlogs-so-that-only-admin-can-read-logs-while-authenticated-users-can-write-logs-place-the-snippet-in-an-existing-firebase-setup-doc-e-g-frontend-firebase-setup-md-and-keep-it-in-english",
+      "title": "Add concise documentation for required Firestore security rules for `/auditLogs` so that only ADMIN can read logs while authenticated users can write logs. Place the snippet in an existing Firebase setup doc (e.g., `frontend/FIREBASE_SETUP.md`) and keep it in English.",
+      "reqIds": [
+        "REQ-81"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -528,6 +768,54 @@
     {
       "id": "AR-17",
       "summary": "Generate an Android release APK artifact for installation/distribution (build output deliverable)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Add Firebase integration to Phoenix Boutique: Firebase Auth (Email/Password), Firestore, and Firebase Storage for images, while keeping the existing local SQLite/IndexedDB database intact and maintaining full offline functionality with no loss/removal of existing orders",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Implement Firebase Auth (Email/Password) login with role lookup from Firestore (/users/{uid}), store role in app state, and support offline login using cached role",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Apply role-based access control (RBAC) in the UI for ADMIN vs STAFF: hide/disable restricted screens, fields, and actions (financials, audit/export, delete) and enforce edit limitations for STAFF",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Add ADMIN-only staff management capability (manage staff users/roles) consistent with Firestore /users roles model",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Implement offline-to-online data sync: read unsynced local orders, upload order to Firestore + images to Firebase Storage, persist Firestore ID back into local DB, mark as synced; ensure idempotency (upload only once/no duplicates) and trigger sync on app start, internet reconnect, and manual sync button",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Extend the local offline Order model to support sync tracking by adding cloudId (string|null), syncStatus (pending|synced), and lastSyncedAt (timestamp|null) without changing existing fields and without adding business rules yet",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Wire role-aware order sanitization + syncOrderToCloud into the app’s existing pending-orders sync flow: STAFF syncs only own orders and excludes financial fields; ADMIN syncs all fields; minimal conflict resolution where admin changes win",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Add audit logging to Firestore (/auditLogs) for key actions (order created/updated, payment updated, order deleted) and restrict log viewing to ADMIN only (RBAC)",
       "reqIds": [],
       "status": "pending"
     }

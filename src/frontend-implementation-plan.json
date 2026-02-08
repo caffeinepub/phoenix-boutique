@@ -1,41 +1,129 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Android release APK build output for Phoenix Boutique",
+  "title": "Firestore audit logging + ADMIN-only Audit Logs viewer",
   "requirements": [
     {
-      "id": "REQ-51",
-      "summary": "Provide a repeatable Android release APK build process that produces a single clearly named artifact and documents release signing requirements without committing secrets.",
+      "id": "REQ-77",
+      "summary": "Create a best-effort Firestore audit logging service that writes order action logs to /auditLogs without breaking offline-first behavior.",
       "acceptanceCriteria": [
-        "A release APK can be produced successfully from the repository using the existing release build configuration (no manual code edits required to complete the build).",
-        "The build outputs a single, clearly named APK file (e.g., PhoenixBoutique-release.apk) and its location/path is documented for maintainers.",
-        "If release signing requires a keystore that is not committed, the build uses placeholders safely (no secrets committed) and the documentation clearly states what values/steps are required to sign the release APK for distribution."
+        "A new frontend service module exists for audit logging (e.g., `frontend/src/firebase/auditLogs.ts`) and uses the existing Firebase dynamic-import pattern (as in `frontend/src/firebase/firestoreOrders.ts`).",
+        "When Firestore is unavailable/unconfigured, calling the audit logging function does not throw to the UI; it returns a non-fatal result.",
+        "Audit log documents are written under the `/auditLogs` collection when Firestore is configured and a Firebase user is signed in.",
+        "All user-facing errors/messages related to audit logging are in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/ANDROID_RELEASE.md",
+          "path": "frontend/src/firebase/auditLogs.ts",
           "operation": "create",
-          "description": "Add maintainer documentation for producing the Android *release* APK using the existing mobile release build configuration, including: prerequisites, exact build command(s), where the unsigned/signed release APK is generated, and a post-build step that ensures a single final artifact is named clearly (e.g., PhoenixBoutique-release.apk) with its final path documented. Include a section on signing that explicitly states required keystore inputs/steps without committing secrets."
+          "description": "Add an audit logging service that (1) defines an action enum for: Order created/updated/deleted + Payment updated, (2) accepts orderId (human-facing), optional localId, actor uid + role, timestamp, and details, (3) uses dynamic imports (Function('return import(...)')) consistent with existing Firebase modules, and (4) is best-effort: if Firebase/Firestore is unconfigured/unavailable or user is missing, return a safe non-fatal result and never throw to the UI. All user-facing strings must be English."
         },
         {
-          "path": "frontend/scripts/build-android-release-apk.sh",
-          "operation": "create",
-          "description": "Add a build helper script that runs the existing Android release build, then copies/renames the produced release APK into a single clearly identifiable build output file named PhoenixBoutique-release.apk under a documented folder (e.g., frontend/build-outputs/). The script must avoid requiring manual code edits to complete the build and must not embed secrets."
+          "path": "frontend/src/firebase/firebaseApp.ts",
+          "operation": "modify",
+          "description": "Ensure the audit logging service can reliably detect whether Firestore is available/configured using existing initialization signals; if needed, expose/adjust a small helper that cleanly indicates Firestore readiness for optional cloud features without affecting offline-only mode."
+        }
+      ]
+    },
+    {
+      "id": "REQ-78",
+      "summary": "Invoke audit logging from existing create/edit/payment/delete flows using current Firebase user and current role when available, without adding new auth requirements.",
+      "acceptanceCriteria": [
+        "Creating a new order triggers a single `Order created` audit log write (when signed in and Firestore configured).",
+        "Editing an order triggers a single `Order updated` audit log write (when signed in and Firestore configured).",
+        "Updating payment via `frontend/src/screens/UpdatePaymentDialog.tsx` triggers a single `Payment updated` audit log write and includes payment-specific details (at minimum: mode and resultingAdvancePaid; include amountChanged when mode is add-payment).",
+        "Deleting an order triggers a single `Order deleted` audit log write (when signed in and Firestore configured).",
+        "If the user is offline or not signed in, create/edit/payment/delete still work locally with no crashes and no blocking prompts beyond existing sync/auth rules."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/screens/NewOrderScreen.tsx",
+          "operation": "modify",
+          "description": "After successful local order creation, call the new audit logging service to write an `Order created` entry. Use the authenticated Firebase user uid when available (via existing auth hook) and current role (via role hook). Ensure logging is non-blocking and does not change existing success/failure UI paths. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/build-outputs/.gitkeep",
-          "operation": "create",
-          "description": "Create a tracked build output directory placeholder so maintainers have a stable documented location for the final PhoenixBoutique-release.apk artifact produced by the build script."
+          "path": "frontend/src/screens/EditOrderScreen.tsx",
+          "operation": "modify",
+          "description": "After successful local order update, call the audit logging service to write an `Order updated` entry using the order’s human-facing orderId plus localId (when present), and actor uid/role when available. Ensure it writes once per successful save and never blocks navigation. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/android/keystore.properties.example",
-          "operation": "create",
-          "description": "Provide an example/placeholder signing properties file (no secrets) documenting the expected property names/values required by the existing release signing configuration. This file must be safe to commit and referenced by frontend/ANDROID_RELEASE.md."
+          "path": "frontend/src/screens/UpdatePaymentDialog.tsx",
+          "operation": "modify",
+          "description": "After successful payment update, call the audit logging service to write a `Payment updated` entry including details: mode, resultingAdvancePaid, paymentMethod, and amountChanged when mode is `add-payment` (and optionally auditNote if present). Use actor uid/role when available; do not add new auth prompts. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/android/keystores/README.md",
+          "path": "frontend/src/screens/OrderDetailsScreen.tsx",
+          "operation": "modify",
+          "description": "Wire an `Order deleted` audit log call to the existing order delete success path (wherever delete is triggered from Order Details). Ensure the log uses the order’s human-facing orderId and localId when available, plus actor uid/role when available, and is best-effort (never blocks delete). Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-79",
+      "summary": "Add an ADMIN-only Audit Logs screen that reads and lists recent /auditLogs entries (newest first) with RBAC enforcement and clear English states.",
+      "acceptanceCriteria": [
+        "A new screen component exists (e.g., `frontend/src/screens/AuditLogsScreen.tsx`) that reads from Firestore `/auditLogs` when configured and authenticated.",
+        "The Audit Logs screen is only visible/accessible when the current role is ADMIN; STAFF users cannot see an entry point and are blocked by RBAC if they navigate to it.",
+        "If Firestore is not configured, the screen shows a clear English empty/disabled state explaining that cloud features are not configured.",
+        "If authenticated but there are no logs, the screen shows an English empty state (e.g., “No audit logs yet”)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/screens/AuditLogsScreen.tsx",
           "operation": "create",
-          "description": "Add documentation indicating where a non-committed release keystore should be placed locally (or injected in CI) and how it maps to the placeholder signing configuration. Ensure wording is English and explicitly warns not to commit keystores or passwords."
+          "description": "Create an Audit Logs screen that (1) is intended for ADMIN only, (2) queries Firestore collection `/auditLogs` in reverse chronological order (newest first) when Firebase is configured and user is authenticated, and (3) renders a clear English list with at minimum action label, orderId, actor userId (or email if readily available from auth state), and timestamp. Include clear English empty/disabled states when Firestore is unconfigured or when there are no logs. Use existing shadcn-ui building blocks (e.g., Card, Button, Alert) for consistent styling. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/firebase/auditLogs.ts",
+          "operation": "modify",
+          "description": "Add a read helper used by the Audit Logs screen to fetch recent audit log documents from `/auditLogs` with dynamic imports and safe non-throwing behavior when Firestore/auth is unavailable. Ensure returned data is easy to render (action, orderId, actor userId/email, role, timestamp, details)."
+        },
+        {
+          "path": "frontend/src/layout/AppShell.tsx",
+          "operation": "modify",
+          "description": "Add RBAC guarding for the new audit logs route consistent with existing patterns: STAFF must see an English access denied screen if they reach it indirectly, and ADMIN should be able to view it normally. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-80",
+      "summary": "Add an ADMIN-only entry point from Reports to the Audit Logs screen and register a new app-shell route key, without modifying immutable frontend paths.",
+      "acceptanceCriteria": [
+        "Reports screen shows an Audit Logs button/link only for ADMIN users.",
+        "Navigation to the new audit logs route renders the Audit Logs screen for ADMIN.",
+        "Attempting to navigate to the audit logs route as STAFF results in an access denied UI (English) consistent with existing RBAC patterns.",
+        "No files in `frontend/immutablePaths` are modified."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/navigation/NavigationProvider.tsx",
+          "operation": "modify",
+          "description": "Add a new navigation screen key for audit logs (e.g., `audit-logs`) to the Screen union type so it can be routed via the existing navigation provider."
+        },
+        {
+          "path": "frontend/src/layout/AppShell.tsx",
+          "operation": "modify",
+          "description": "Register the new `audit-logs` screen in the switch routing and include it in restricted screen checks, rendering the new AuditLogsScreen for ADMIN users. Ensure STAFF is blocked via the existing AccessDeniedScreen pattern. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/screens/ReportsScreen.tsx",
+          "operation": "modify",
+          "description": "Add an ADMIN-only Audit Logs button/link within the Reports screen (alongside other admin-only report actions) that navigates to the `audit-logs` screen. Ensure STAFF never sees this entry point. Use existing shadcn-ui Button/Card patterns. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-81",
+      "summary": "Document Firestore security rules for /auditLogs: ADMIN-only reads and authenticated writes, in existing Firebase setup docs (English).",
+      "acceptanceCriteria": [
+        "Documentation includes a `match /auditLogs/{logId}` rule example that restricts reads to ADMIN and allows writes only for authenticated users.",
+        "Documentation explicitly states that the app enforces ADMIN-only viewing in the UI, but Firestore rules must also enforce it server-side."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/FIREBASE_SETUP.md",
+          "operation": "modify",
+          "description": "Add a concise English Firestore security rules snippet documenting `match /auditLogs/{logId}`: allow create/write for authenticated users, restrict reads to ADMIN, and explicitly note that UI RBAC is not sufficient and must be enforced in Firestore rules server-side."
         }
       ]
     }

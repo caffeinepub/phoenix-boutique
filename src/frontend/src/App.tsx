@@ -1,7 +1,14 @@
+/**
+ * Main application component that initializes offline persistence, wires auto-sync triggers after DB is ready, and wraps the app with RoleProvider, FirebaseProvider, NavigationProvider, and AppShell.
+ */
+
 import { NavigationProvider } from './navigation/NavigationProvider';
 import { AppShell } from './layout/AppShell';
+import { FirebaseProvider } from './firebase/FirebaseProvider';
+import { RoleProvider } from './rbac/RoleProvider';
 import { initializeOffline } from './services/offlineInit';
 import { useEffect, useState } from 'react';
+import { AutoSyncManager } from './components/AutoSyncManager';
 
 function App() {
   const [isDbReady, setIsDbReady] = useState(false);
@@ -21,9 +28,14 @@ function App() {
   }
 
   return (
-    <NavigationProvider>
-      <AppShell />
-    </NavigationProvider>
+    <RoleProvider>
+      <FirebaseProvider>
+        <NavigationProvider>
+          <AutoSyncManager />
+          <AppShell />
+        </NavigationProvider>
+      </FirebaseProvider>
+    </RoleProvider>
   );
 }
 

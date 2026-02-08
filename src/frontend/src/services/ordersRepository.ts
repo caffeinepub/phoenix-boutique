@@ -1,6 +1,5 @@
 /**
- * Typed repository for order operations using IndexedDB.
- * Provides read helpers for Dashboard metrics, recent orders, and single order queries with automatic normalization of pricing/payment fields and payment history.
+ * Typed repository for order operations using IndexedDB with extended Order interface including sync tracking fields (cloudId, syncStatus, lastSyncedAt) and optional Firebase sync metadata, automatic normalization of pricing/payment fields, and payment history tracking.
  */
 
 import { getDb } from './localDb';
@@ -34,6 +33,14 @@ export interface Order {
   paymentMethod: 'Cash' | 'UPI' | 'Card' | 'Other';
   notes?: string;
   paymentHistory: PaymentHistoryEntry[];
+  // Sync tracking fields
+  cloudId: string | null;
+  syncStatus: 'pending' | 'synced';
+  lastSyncedAt: string | null;
+  // Optional Firebase sync metadata fields (legacy)
+  remoteId?: string | null;
+  syncState?: 'pending' | 'synced' | 'conflict';
+  imageStorageUrls?: string[];
 }
 
 const STORE_NAME = 'orders';
@@ -68,6 +75,16 @@ function normalizeOrder(order: any): Order {
   // Ensure paymentHistory is always an array
   const paymentHistory = Array.isArray(order.paymentHistory) ? order.paymentHistory : [];
   
+  // Ensure sync tracking fields have defaults
+  const cloudId = order.cloudId !== undefined ? order.cloudId : null;
+  const syncStatus = order.syncStatus || 'pending';
+  const lastSyncedAt = order.lastSyncedAt !== undefined ? order.lastSyncedAt : null;
+  
+  // Ensure legacy sync metadata fields have defaults
+  const remoteId = order.remoteId !== undefined ? order.remoteId : null;
+  const syncState = order.syncState || 'pending';
+  const imageStorageUrls = Array.isArray(order.imageStorageUrls) ? order.imageStorageUrls : [];
+  
   return {
     ...order,
     priceTotal,
@@ -77,6 +94,12 @@ function normalizeOrder(order: any): Order {
     paymentMethod,
     notes: order.notes || '',
     paymentHistory,
+    cloudId,
+    syncStatus,
+    lastSyncedAt,
+    remoteId,
+    syncState,
+    imageStorageUrls,
   };
 }
 
@@ -201,6 +224,9 @@ export async function updateOrder(
         deliveredAt: updates.status === 'Delivered' && existingOrder.status !== 'Delivered'
           ? Date.now().toString()
           : existingOrder.deliveredAt,
+        // Mark as pending sync if data changed
+        syncStatus: 'pending' as const,
+        syncState: 'pending' as const,
       };
       
       // Put the updated order back
@@ -268,6 +294,8 @@ export async function updateOrderPayment(
         paymentMethod: paymentUpdate.paymentMethod,
         paymentHistory: updatedHistory,
         id, // Ensure ID is preserved
+        syncStatus: 'pending' as const, // Mark as pending sync
+        syncState: 'pending' as const, // Mark as pending sync (legacy)
       };
       
       // Put the updated order back

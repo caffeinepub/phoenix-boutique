@@ -1,10 +1,9 @@
 /**
- * Local persistence adapter using IndexedDB for offline-first storage.
- * Broadcasts change events for reactive UI updates and handles schema migrations.
+ * Local persistence adapter using IndexedDB for offline-first storage with version 5 schema migration that adds sync tracking fields (cloudId, syncStatus, lastSyncedAt) while preserving all original data.
  */
 
 const DB_NAME = 'phoenix_boutique_db';
-const DB_VERSION = 3; // Bumped for payment history migration
+const DB_VERSION = 5; // Bumped for sync tracking fields migration
 const STORE_NAME = 'orders';
 
 let db: IDBDatabase | null = null;
@@ -97,6 +96,77 @@ export async function initDb(): Promise<void> {
         
         getAllRequest.onerror = () => {
           console.error('Failed to migrate orders to version 3');
+        };
+      }
+      
+      // Migration for version 4: Add optional sync metadata fields
+      if (event.oldVersion < 4 && transaction) {
+        const store = transaction.objectStore(STORE_NAME);
+        const getAllRequest = store.getAll();
+        
+        getAllRequest.onsuccess = () => {
+          const orders = getAllRequest.result;
+          
+          // Update each existing order with default sync metadata
+          orders.forEach((order: any) => {
+            // Only add fields if they don't exist
+            if (order.remoteId === undefined) {
+              order.remoteId = null;
+            }
+            if (order.lastSyncedAt === undefined) {
+              order.lastSyncedAt = null;
+            }
+            if (order.syncState === undefined) {
+              order.syncState = 'pending';
+            }
+            if (order.imageStorageUrls === undefined) {
+              order.imageStorageUrls = [];
+            }
+            
+            // Update the record in the store
+            store.put(order);
+          });
+          
+          console.log(`Migrated ${orders.length} orders to version 4 with sync metadata fields`);
+        };
+        
+        getAllRequest.onerror = () => {
+          console.error('Failed to migrate orders to version 4');
+        };
+      }
+      
+      // Migration for version 5: Add sync tracking fields (cloudId, syncStatus, lastSyncedAt)
+      if (event.oldVersion < 5 && transaction) {
+        const store = transaction.objectStore(STORE_NAME);
+        const getAllRequest = store.getAll();
+        
+        getAllRequest.onsuccess = () => {
+          const orders = getAllRequest.result;
+          
+          // Update each existing order with default sync tracking fields
+          orders.forEach((order: any) => {
+            // Only add fields if they don't exist (idempotent)
+            if (order.cloudId === undefined) {
+              order.cloudId = null;
+            }
+            if (order.syncStatus === undefined) {
+              order.syncStatus = 'pending';
+            }
+            // Note: lastSyncedAt may already exist from version 4 migration
+            // Only set if it doesn't exist to avoid overwriting
+            if (order.lastSyncedAt === undefined) {
+              order.lastSyncedAt = null;
+            }
+            
+            // Update the record in the store
+            store.put(order);
+          });
+          
+          console.log(`Migrated ${orders.length} orders to version 5 with sync tracking fields`);
+        };
+        
+        getAllRequest.onerror = () => {
+          console.error('Failed to migrate orders to version 5');
         };
       }
     };

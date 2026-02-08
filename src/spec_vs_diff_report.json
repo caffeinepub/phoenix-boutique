@@ -1,52 +1,58 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T07:04:32.401Z",
-  "summary": "REQ-51 is partially implemented: a release-build script and signing placeholder files were added, and the script copies the Gradle release APK to a clearly named output file. However, the provided diff summary is truncated for the main build guide, so it is not fully verifiable that the APK output location/path and signing steps are documented as required. The diff also includes substantial unrelated frontend feature work and modifications to an explicitly immutable path (frontend/src/main.tsx), which were not requested for the APK-artifact task.",
+  "generatedAt": "2026-02-08T16:05:39.927Z",
+  "summary": "Implemented a Firestore-based audit logging module and an ADMIN-only Audit Logs screen with navigation/routing hooks, plus wired audit logging for payment updates and order deletion. However, some required wiring, UI entry-point conditions, and Firestore security rules documentation are not evidenced in the diff summary.",
   "missing_requirements": [
     {
-      "id": "REQ-51",
-      "requirement": "Document the single, clearly named release APK output file and its location/path for maintainers, and clearly state required values/steps for release signing when the keystore is not committed.",
-      "reason": "While the build script copies to build-outputs/PhoenixBoutique-release.apk and prints the location, the primary documentation file (ANDROID_RELEASE.md) is truncated in the diff summary right after 'From the frontend/ directory, run:', so it is not confirmable from the provided evidence that the required output path and signing steps are documented there as acceptance criteria require.",
+      "id": "REQ-78",
+      "requirement": "Wire a single `Order updated` audit log write after a successful local order update (including edits).",
+      "reason": "EditOrderScreen shows `writeAuditLog` imported, but the diff snippet is truncated before any confirmed call site; no other modified file shows an `order_updated` log being written.",
       "evidence": [
-        "frontend/ANDROID_RELEASE.md (truncated)",
-        "frontend/scripts/build-android-release-apk.sh",
-        "frontend/android/keystore.properties.example",
-        "frontend/android/keystores/README.md"
+        "frontend/src/screens/EditOrderScreen.tsx"
+      ]
+    },
+    {
+      "id": "REQ-80",
+      "requirement": "Reports screen shows an Audit Logs button/link only for ADMIN users.",
+      "reason": "ReportsScreen includes a `handleAuditLogs` navigation function, but the truncated diff does not show any UI element conditionally rendered for ADMIN-only access.",
+      "evidence": [
+        "frontend/src/screens/ReportsScreen.tsx"
+      ]
+    },
+    {
+      "id": "REQ-81",
+      "requirement": "Add Firestore security rules documentation snippet for `/auditLogs` (ADMIN-only reads; authenticated writes) into FIREBASE_SETUP.md, explicitly noting UI + server-side enforcement.",
+      "reason": "The FIREBASE_SETUP.md diff content shown is only the beginning of the setup guide and does not include any `/auditLogs` rules snippet or related documentation.",
+      "evidence": [
+        "frontend/FIREBASE_SETUP.md"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Large set of unrelated frontend feature/UI/data-model changes (orders, payments, audit exports, luxury styling, navigation updates) not requested by REQ-51.",
-      "reason": "BuildRequest only asks to generate and document an Android release APK artifact; these app feature changes are outside scope and risk violating constraints (e.g., no new functionality).",
+      "description": "Order deletion implemented as a soft delete by updating `status: 'Delivered'` as a delete marker.",
+      "reason": "The BuildRequest requires recording an `Order deleted` audit log when an order is deleted, but does not request changing deletion semantics to a soft-delete via status mutation.",
       "evidence": [
-        "frontend-file-summaries.txt (modified; lists many application feature changes)"
-      ]
-    },
-    {
-      "description": "Modification to an explicitly immutable file path: frontend/src/main.tsx (removing Internet Identity provider).",
-      "reason": "BuildRequest constraints state 'Do not modify immutable frontend paths' including frontend/src/main.tsx; changing it is unrequested and violates constraints.",
-      "evidence": [
-        "frontend-file-summaries.txt (mentions \"frontend/src/main.tsx\": modified)"
-      ]
-    },
-    {
-      "description": "Project state metadata updated to include broad production build scope (Android APK/AAB and iOS IPA) beyond the requested Android release APK artifact.",
-      "reason": "The BuildRequest non-goals explicitly exclude iOS IPA artifacts; updating project_state.json to claim iOS IPA preparation is unrequested.",
-      "evidence": [
-        "project_state.json (modified; summary mentions \"Android APK/AAB and iOS IPA\")"
+        "frontend/src/screens/OrderDetailsScreen.tsx"
       ]
     }
   ],
-  "confidence": 0.68,
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/ANDROID_RELEASE.md",
-    "frontend/android/keystore.properties.example",
-    "frontend/android/keystores/README.md",
-    "frontend/build-outputs/.gitkeep",
-    "frontend/scripts/build-android-release-apk.sh",
+    "frontend/FIREBASE_SETUP.md",
+    "frontend/src/firebase/auditLogs.ts",
+    "frontend/src/layout/AppShell.tsx",
+    "frontend/src/navigation/NavigationProvider.tsx",
+    "frontend/src/screens/AuditLogsScreen.tsx",
+    "frontend/src/screens/DashboardScreen.tsx",
+    "frontend/src/screens/EditOrderScreen.tsx",
+    "frontend/src/screens/NewOrderScreen.tsx",
+    "frontend/src/screens/OrderDetailsScreen.tsx",
+    "frontend/src/screens/OrdersListScreen.tsx",
+    "frontend/src/screens/ReportsScreen.tsx",
+    "frontend/src/screens/UpdatePaymentDialog.tsx",
     "project_state.json"
   ]
 }

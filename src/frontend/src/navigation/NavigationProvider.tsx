@@ -1,26 +1,31 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-type Screen = 'dashboard' | 'new-order' | 'orders-list' | 'order-details' | 'edit-order' | 'reports' | 'printable-summary' | 'printable-audit-summary' | 'audit-accounts';
+type Screen = 'dashboard' | 'new-order' | 'orders-list' | 'order-details' | 'edit-order' | 'reports' | 'printable-summary' | 'printable-audit-summary' | 'audit-accounts' | 'staff-management' | 'audit-logs';
 
-interface NavigationContextValue {
-  currentScreen: Screen;
-  navigateTo: (screen: Screen) => void;
-  selectedOrderId: number | null;
-  setSelectedOrderId: (id: number | null) => void;
+interface NavigationState {
+  orderId?: number;
+  [key: string]: any;
 }
 
-const NavigationContext = createContext<NavigationContextValue | undefined>(undefined);
+interface NavigationContextType {
+  currentScreen: Screen;
+  navigationState: NavigationState | null;
+  navigateTo: (screen: Screen, state?: NavigationState) => void;
+}
+
+const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 export function NavigationProvider({ children }: { children: ReactNode }) {
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard');
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [navigationState, setNavigationState] = useState<NavigationState | null>(null);
 
-  const navigateTo = (screen: Screen) => {
+  const navigateTo = (screen: Screen, state?: NavigationState) => {
     setCurrentScreen(screen);
+    setNavigationState(state || null);
   };
 
   return (
-    <NavigationContext.Provider value={{ currentScreen, navigateTo, selectedOrderId, setSelectedOrderId }}>
+    <NavigationContext.Provider value={{ currentScreen, navigationState, navigateTo }}>
       {children}
     </NavigationContext.Provider>
   );

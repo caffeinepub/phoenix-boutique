@@ -1,175 +1,145 @@
+import { ScreenTitle } from '../shared/ui/ScreenTitle';
 import { useNavigation } from '../navigation/NavigationProvider';
+import { useRole } from '../rbac/useRole';
 import { useAllOrders } from '../hooks/useOrdersLiveQuery';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { filterOrdersForToday, filterOrdersForThisWeek, formatDeliveryDate } from '../services/orderQueries';
-import { ArrowLeft, Printer, Package } from 'lucide-react';
+import { AccessDeniedScreen } from '../shared/ui/AccessDeniedScreen';
 
 export function PrintableSummaryScreen() {
   const { navigateTo } = useNavigation();
-  const { data: orders = [], isLoading } = useAllOrders();
+  const { permissions } = useRole();
+  const { data: orders = [] } = useAllOrders();
+
+  // Guard: only ADMIN can view printable reports
+  if (!permissions.canViewReports) {
+    return <AccessDeniedScreen title="Print Access Denied" message="Printable reports are restricted to administrators only." />;
+  }
 
   const todayOrders = filterOrdersForToday(orders);
   const weekOrders = filterOrdersForThisWeek(orders);
-  const generatedAt = new Date().toLocaleString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 
   const handlePrint = () => {
     window.print();
   };
 
-  const getStatusVariant = (status: string): 'default' | 'secondary' => {
+  const getStatusVariant = (status: string): 'default' | 'secondary' | 'outline' => {
     return status === 'Pending' ? 'secondary' : 'default';
   };
 
+  const getPaymentStatusVariant = (status: string): 'default' | 'secondary' | 'outline' => {
+    switch (status) {
+      case 'Paid':
+        return 'default';
+      case 'Partial':
+        return 'secondary';
+      case 'Unpaid':
+        return 'outline';
+      default:
+        return 'outline';
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Screen controls - hidden in print */}
-      <div className="print:hidden flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigateTo('reports')}
-          className="shrink-0"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold text-primary">Printable Summary</h1>
-        <Button
-          onClick={handlePrint}
-          className="ml-auto"
-          size="sm"
-        >
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 no-print">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigateTo('reports')}
+            className="shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <ScreenTitle>Printable Summary</ScreenTitle>
+        </div>
+        <Button onClick={handlePrint} variant="default" size="sm">
           <Printer className="h-4 w-4 mr-2" />
           Print
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Loading orders...
-        </div>
-      ) : (
-        <div className="space-y-8 print:space-y-6">
-          {/* Print header - only visible in print */}
-          <div className="hidden print:block text-center mb-8">
-            <h1 className="text-3xl font-bold text-primary mb-2">Phoenix Boutique</h1>
-            <h2 className="text-xl font-semibold mb-1">Order Summary Report</h2>
-            <p className="text-sm text-muted-foreground">Generated on {generatedAt}</p>
-          </div>
-
-          {/* Today's Orders Section */}
-          <Card className="shadow-soft print:shadow-none print:border-2">
-            <CardHeader>
-              <CardTitle className="text-xl">Today's Orders</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Orders scheduled for delivery today ({todayOrders.length} total)
-              </p>
-            </CardHeader>
-            <CardContent>
-              {todayOrders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Package className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No orders scheduled for today</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {todayOrders.map((order, index) => (
-                    <div key={order.id || index}>
-                      {index > 0 && <Separator className="my-4" />}
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-base">{order.orderId}</span>
-                              <Badge variant={getStatusVariant(order.status)}>
-                                {order.status}
-                              </Badge>
-                            </div>
-                            <p className="text-sm font-medium">{order.customerName}</p>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Booking:</span>{' '}
-                            <span className="font-medium">{formatDeliveryDate(order.bookingDate)}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Delivery:</span>{' '}
-                            <span className="font-medium">{formatDeliveryDate(order.deliveryDate)}</span>
-                          </div>
-                        </div>
+      {/* Today's Orders */}
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle className="text-lg">Today's Orders ({todayOrders.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {todayOrders.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">No orders for today</p>
+          ) : (
+            <div className="space-y-3">
+              {todayOrders.map((order) => (
+                <div key={order.id} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-semibold text-sm">{order.orderId}</span>
+                        <Badge variant={getStatusVariant(order.status)} className="text-xs">
+                          {order.status}
+                        </Badge>
+                        <Badge variant={getPaymentStatusVariant(order.paymentStatus)} className="text-xs">
+                          {order.paymentStatus}
+                        </Badge>
                       </div>
+                      <p className="text-sm">{order.customerName}</p>
                     </div>
-                  ))}
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-primary">₹{order.priceTotal.toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Delivery: {formatDeliveryDate(order.deliveryDate)}
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-          {/* This Week's Orders Section */}
-          <Card className="shadow-soft print:shadow-none print:border-2 print:break-before-page">
-            <CardHeader>
-              <CardTitle className="text-xl">This Week's Orders</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Orders scheduled for delivery in the next 7 days ({weekOrders.length} total)
-              </p>
-            </CardHeader>
-            <CardContent>
-              {weekOrders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Package className="h-10 w-10 text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No orders scheduled for this week</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {weekOrders.map((order, index) => (
-                    <div key={order.id || index}>
-                      {index > 0 && <Separator className="my-4" />}
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-base">{order.orderId}</span>
-                              <Badge variant={getStatusVariant(order.status)}>
-                                {order.status}
-                              </Badge>
-                            </div>
-                            <p className="text-sm font-medium">{order.customerName}</p>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Booking:</span>{' '}
-                            <span className="font-medium">{formatDeliveryDate(order.bookingDate)}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Delivery:</span>{' '}
-                            <span className="font-medium">{formatDeliveryDate(order.deliveryDate)}</span>
-                          </div>
-                        </div>
+      {/* This Week's Orders */}
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle className="text-lg">This Week's Orders ({weekOrders.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {weekOrders.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">No orders for this week</p>
+          ) : (
+            <div className="space-y-3">
+              {weekOrders.map((order) => (
+                <div key={order.id} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-semibold text-sm">{order.orderId}</span>
+                        <Badge variant={getStatusVariant(order.status)} className="text-xs">
+                          {order.status}
+                        </Badge>
+                        <Badge variant={getPaymentStatusVariant(order.paymentStatus)} className="text-xs">
+                          {order.paymentStatus}
+                        </Badge>
                       </div>
+                      <p className="text-sm">{order.customerName}</p>
                     </div>
-                  ))}
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-primary">₹{order.priceTotal.toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Delivery: {formatDeliveryDate(order.deliveryDate)}
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Print footer - only visible in print */}
-          <div className="hidden print:block text-center text-sm text-muted-foreground mt-8 pt-4 border-t">
-            <p>Phoenix Boutique - Order Summary Report</p>
-            <p>Generated on {generatedAt}</p>
-          </div>
-        </div>
-      )}
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

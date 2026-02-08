@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Package, Clock, Calendar, ShoppingBag } from 'lucide-react';
 
 export function DashboardScreen() {
-  const { navigateTo, setSelectedOrderId } = useNavigation();
+  const { navigateTo } = useNavigation();
   const { data: allOrders = [], isLoading: isLoadingAll } = useAllOrders();
   const { data: recentOrders = [], isLoading: isLoadingRecent } = useRecentOrders(5);
 
@@ -31,8 +31,7 @@ export function DashboardScreen() {
   };
 
   const handleOrderClick = (orderId: number) => {
-    setSelectedOrderId(orderId);
-    navigateTo('order-details');
+    navigateTo('order-details', { orderId });
   };
 
   return (
@@ -128,25 +127,24 @@ export function DashboardScreen() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm">{order.orderId}</span>
-                        <Badge variant={getStatusVariant(order.status)} className="text-xs">
-                          {order.status}
-                        </Badge>
-                        <Badge variant={getPaymentStatusVariant(order.paymentStatus)} className="text-xs">
-                          {order.paymentStatus}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-foreground">{order.customerName}</p>
+                      <p className="font-semibold text-primary">{order.customerName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {order.orderId}
+                      </p>
                     </div>
+                    <Badge variant={getStatusVariant(order.status)}>
+                      {order.status}
+                    </Badge>
                   </div>
-                  <div className="flex items-center justify-between gap-4 text-xs">
-                    <div className="text-muted-foreground">
-                      <span className="font-medium">Delivery:</span>{' '}
-                      {formatDeliveryDate(order.deliveryDate)}
-                    </div>
-                    <div className="text-primary font-semibold">
-                      ₹{order.priceTotal.toFixed(2)}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Delivery: {formatDeliveryDate(order.deliveryDate)}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getPaymentStatusVariant(order.paymentStatus)}>
+                        {order.paymentStatus}
+                      </Badge>
+                      <span className="font-semibold">₹{order.priceTotal?.toFixed(2) || '0.00'}</span>
                     </div>
                   </div>
                 </button>
@@ -157,14 +155,15 @@ export function DashboardScreen() {
       </Card>
 
       {/* Floating Action Button */}
-      <Button
-        onClick={() => navigateTo('new-order')}
-        size="lg"
-        className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-soft-lg hover:shadow-xl transition-all duration-200 hover:scale-110 z-40"
-      >
-        <Plus className="h-6 w-6" />
-        <span className="sr-only">New Order</span>
-      </Button>
+      <div className="fixed bottom-20 right-4 z-10">
+        <Button
+          onClick={() => navigateTo('new-order')}
+          size="lg"
+          className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
     </div>
   );
 }
